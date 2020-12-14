@@ -454,18 +454,93 @@ summary {
 <li><a href="https://cran.r-project.org/web/packages/FNN/FNN.pdf"><code>FNN</code></a>
 <ul>
 <li>Title: Fast Nearest Neighbor Search Algorithms and Applications</li>
-<li>This is package that contains the <code>knn.reg()</code> function that will performn the K-Nearest-Neighbor regression</li>
+<li>This is package that contains the <code>knn.reg()</code> function that will perform the K-Nearest-Neighbor regression</li>
 </ul></li>
 </ul>
+</div>
+<div id="use-case" class="section level2">
+<h2>Use Case</h2>
+<ul>
+<li>Regression</li>
+<li>Missing period handling</li>
+</ul>
+</div>
+<div id="caution" class="section level2">
+<h2>Caution</h2>
+<ul>
+<li>Do not use to predict something the training data has not seen before.</li>
+<li>Need to find a way to convert categorical predictors to numeric predictors</li>
+</ul>
+</div>
+<div id="tutorial" class="section level2">
+<h2>Tutorial</h2>
 <div class="solution">
-
-
+<p>Load the required library</p>
 <pre class="r"><code>library(tidyverse)
 library(FNN)</code></pre>
-<div>
+</div>
+<p>The data we will use is the housing price data from <a href="https://www.kaggle.com/c/house-prices-advanced-regression-techniques">Kaggle</a>.</p>
+<ul>
+<li>Response Variable: <strong><code>price</code></strong></li>
+</ul>
+<div class="solution">
+<p>Read and Preview the Training Data</p>
+<pre class="r"><code>train &lt;- read_csv(&#39;.\\Data\\realestate-train.csv&#39;)
+head(train)</code></pre>
+<pre><code>#&gt; # A tibble: 6 x 13
+#&gt;   price PoolArea GarageCars Fireplaces TotRmsAbvGrd Baths SqFeet CentralAir
+#&gt;   &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;        &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;     
+#&gt; 1  208.        0          2          0            8     3   1710 Y         
+#&gt; 2  140         0          3          1            7     1   1717 Y         
+#&gt; 3  250         0          3          1            9     3   2198 Y         
+#&gt; 4  143         0          2          0            5     2   1362 Y         
+#&gt; 5  307         0          2          1            7     2   1694 Y         
+#&gt; 6  130.        0          2          2            8     2   1774 Y         
+#&gt; # ... with 5 more variables: Age &lt;dbl&gt;, LotSize &lt;dbl&gt;, BldgType &lt;chr&gt;,
+#&gt; #   HouseStyle &lt;chr&gt;, condition &lt;dbl&gt;</code></pre>
+<p>Read and Preview the Testing Data</p>
+<pre class="r"><code>test &lt;- read_csv(&#39;.\\Data\\realestate-test.csv&#39;)
+head(test)</code></pre>
+<pre><code>#&gt; # A tibble: 6 x 12
+#&gt;   PoolArea GarageCars Fireplaces TotRmsAbvGrd Baths SqFeet CentralAir   Age
+#&gt;      &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;        &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+#&gt; 1        0          2          0            6     2   1516 Y             45
+#&gt; 2        0          1          0            4     1    616 Y             85
+#&gt; 3        0          1          1            8     2   1696 Y             45
+#&gt; 4        0          2          0            6     3   1479 Y             34
+#&gt; 5        0          2          1            8     2   2217 Y             37
+#&gt; 6        0          2          1            7     4   1868 Y             23
+#&gt; # ... with 4 more variables: LotSize &lt;dbl&gt;, BldgType &lt;chr&gt;, HouseStyle &lt;chr&gt;,
+#&gt; #   condition &lt;dbl&gt;</code></pre>
+<p>For this tutorial, we will just focus on the following predictors:</p>
+<ul>
+<li><code>SqFeet</code>: <em>numeric</em></li>
+<li><code>Age</code>: <em>numeric</em></li>
+<li><code>BldgType</code>: <em>Categorical</em></li>
+</ul>
+<p>The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can work with numeric and categorical variable.</p>
+<pre class="r"><code>train &lt;- train %&gt;% 
+  select(price, SqFeet, Age, BldgType) %&gt;% 
+  mutate(BldgType = as.numeric(as.factor(BldgType)))
+test &lt;- test %&gt;% 
+  select(SqFeet, Age, BldgType) %&gt;% 
+  mutate(BldgType = as.numeric(as.factor(BldgType)))</code></pre>
+<p>Running the KNN Model</p>
+<pre class="r"><code># Choose a base case for 5 nearest neighbor
+k = 5
 
-
-
+# Kick Off the KNN Model
+knn_model &lt;- knn.reg(
+  # Define training data
+  train = train %&gt;% select(-price),
+  # Define test data, if NULL, LOOCV will be used`
+  test = NULL,
+  # Define response variable, use vector!
+  y = train$price,
+  # Define k, Default is 3 
+  k = k
+)</code></pre>
+</div>
 </div>
 
 

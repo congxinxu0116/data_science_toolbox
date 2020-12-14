@@ -40,27 +40,86 @@ This tutorial is going to discuss how to implement K Nearest Neighbor model in `
   - We will mainly use `tidyverse` for data manipulation (`dplyr`) and visualization (`ggplot2`). 
 - [`FNN`](https://cran.r-project.org/web/packages/FNN/FNN.pdf)
   - Title: Fast Nearest Neighbor Search Algorithms and Applications
-  - This is package that contains the `knn.reg()` function that will performn the K-Nearest-Neighbor regression
+  - This is package that contains the `knn.reg()` function that will perform the K-Nearest-Neighbor regression
 
+## Use Case
+
+- Regression
+- Missing period handling
+
+## Caution
+
+- Do not use to predict something the training data has not seen before.
+- Need to find a way to convert categorical predictors to numeric predictors
+
+## Tutorial
 
 <div class="solution">
-    
+Load the required library
 ```{r Packages, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(FNN)
 ```
+</div>
 
-<div>
 
-## Data
+The data we will use is the housing price data from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques).
 
-The data we used here is the 
+- Response Variable: **`price`**
 
-```{r Data,}
+<div class="solution">
+Read and Preview the Training Data
+```{r Training Data, message=FALSE}
 train <- read_csv('.\\Data\\realestate-train.csv')
+head(train)
+```
+
+Read and Preview the Testing Data
+```{r Testing Data, message=FALSE}
+test <- read_csv('.\\Data\\realestate-test.csv')
+head(test)
+```
+For this tutorial, we will just focus on the following predictors:
+
+- `SqFeet`: *numeric*
+- `Age`: *numeric*
+- `BldgType`: *Categorical*
+
+The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can work with numeric and categorical variable.
+```{r Cleaning}
+train <- train %>% 
+  select(price, SqFeet, Age, BldgType) %>% 
+  mutate(BldgType = as.numeric(as.factor(BldgType)))
+test <- test %>% 
+  select(SqFeet, Age, BldgType) %>% 
+  mutate(BldgType = as.numeric(as.factor(BldgType)))
 ```
 
 
+Running the KNN Model
+```{r}
+# Choose a base case for 5 nearest neighbor
+k = 5
+
+# Kick Off the KNN Model
+knn_model <- knn.reg(
+  # Define training data
+  train = train %>% select(-price),
+  # Define test data, if NULL, LOOCV will be used`
+  test = NULL,
+  # Define response variable, use vector!
+  y = train$price,
+  # Define k, Default is 3 
+  k = k
+)
+
+
+```
+
+
+
+
+</div>
 
 
 
