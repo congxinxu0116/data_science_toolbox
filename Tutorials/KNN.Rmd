@@ -1,0 +1,73 @@
+---
+title: "K Nearest Neighbor Tutorial"
+author: "Congxin (David) Xu"
+date: "12/11/2020"
+output: html_document
+---
+
+```{r Setup, include=FALSE}
+knitr::opts_chunk$set(error=TRUE,           # Keep compiling upon error
+                      collapse=FALSE,       # collapse by default
+                      echo=TRUE,            # echo code by default
+                      comment = "#>",       # change comment character
+                      fig.width = 5,        # set figure width
+                      fig.align = "center", # set figure position
+                      out.width = "49%",    # set width of displayed images
+                      warning=TRUE,         # show R warnings
+                      message=TRUE)         # show R messages
+options(dplyr.summarise.inform = FALSE)     # ignore message about group structure
+```
+
+
+```{css Solution-Region, echo=FALSE}
+.solution {
+  background-color: #232D4B10;
+  border-style: solid;
+  border-color: #232D4B;
+  padding: .5em;
+  margin: 20px
+}
+```
+
+
+## Description
+
+This tutorial is going to discuss how to implement K Nearest Neighbor model in `R`. 
+
+## Package Dependency
+
+- [`tidyverse`](https://www.tidyverse.org/)
+  - We will mainly use `tidyverse` for data manipulation (`dplyr`) and visualization (`ggplot2`). 
+- [`FNN`](https://cran.r-project.org/web/packages/FNN/FNN.pdf)
+  - Title: Fast Nearest Neighbor Search Algorithms and Applications
+  - This is package that contains the `knn.reg()` function that will performn the K-Nearest-Neighbor regression
+
+
+<div class="solution">
+    
+```{r Packages, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(FNN)
+```
+
+<div>
+
+## Data
+
+The data we used here is the 
+
+```{r Data,}
+train <- read_csv('.\\Data\\realestate-train.csv')
+```
+
+
+
+
+
+
+
+
+
+
+
+
