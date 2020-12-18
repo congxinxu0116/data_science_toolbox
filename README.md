@@ -20,20 +20,57 @@ This GitHub repo is a collection of data science tutorials on how to solve diffe
   - [`numpy`](https://numpy.org/)
   - [`pymc3`](https://docs.pymc.io/)
 
-### Forecasting Tools
+## Forecasting Tools 
+
 - K-Nearest Neighbor
-- Ordinary Least Squares Regression
-- Step-wise Regression
+- Ordinary Least Squares Regression 
+- Stepwise Regression 
 - Ridge, Lasso and Elastic Net
-- 
+- Generalized Additive Model 
+  - Basis Expansion 
+- Generative Classification Models 
+  - Linear Discriminant Analysis  
+  - Quadratic Discriminant Analysis 
+  - Naïve Bayes Model 
+- Support Vector Machine 
+- Density Estimation 
+  - Parametric
+  - Non-parametric 
+  - Kernel Density Estimation 
+  - Multivariate KDE 
+- Cluster Analysis 
+  - K-Means 
+  - Gaussian Mixture Model  
+- Random Forest 
+  - Bootstrap 
+  - Bagging
+- Boosting 
+  - L2 Boosting 
+  - Ada Boosting 
+  - XGBoost 
+    - Gradient 
+  - CatBoost
+  - Light GBM 
+- Ensemble
+  - Model Averaging 
+  - Stacking 
+  - Base learner and super leaner 
+- Association:	Market Basket Model 
 
-### Feature Engineering Tools
-- Polynomial Expansion
-- B-spline
-- Principal Component Analysis
+## Feature Engineering Tools 
 
-### Model Validation
-- Cross Validation
+- Polynomial Expansion 
+- B-spline 
+- Principal Component Analysis 
+- Anormal Detection 
+
+ ## Model Validation 
+
+- Cross Validation 
+- K-fold Validation 
+
+## Other 
+- Network Analysis 
 
 ## Author:
 - Congxin (David) Xu
