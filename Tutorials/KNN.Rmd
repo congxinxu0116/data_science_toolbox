@@ -44,13 +44,13 @@ This tutorial is going to discuss how to implement K Nearest Neighbor model in `
 
 ## Use Case
 
-- Regression
-- Missing period handling
+- Solving regression type of problem
+- Fill in missing period handling
 
 ## Caution
 
 - Do not use to predict something the training data has not seen before.
-- Need to find a way to convert categorical predictors to numeric predictors
+- Need to find a way to convert categorical predictors to numeric predictors.
 
 ## Tutorial
 
@@ -68,24 +68,24 @@ The data we will use is the housing price data from [Kaggle](https://www.kaggle.
 - Response Variable: **`price`**
 
 <div class="solution">
-Read and Preview the Training Data
+**Read and Preview the Training Data**
 ```{r Training Data, message=FALSE}
 train <- read_csv('.\\Data\\realestate-train.csv')
 head(train)
 ```
 
-Read and Preview the Testing Data
+**Read and Preview the Testing Data**
 ```{r Testing Data, message=FALSE}
 test <- read_csv('.\\Data\\realestate-test.csv')
 head(test)
 ```
-For this tutorial, we will just focus on the following predictors:
+**For this tutorial, we will just focus on the following predictors:**
 
 - `SqFeet`: *numeric*
 - `Age`: *numeric*
 - `BldgType`: *Categorical*
 
-The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can work with numeric and categorical variable.
+**The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can work with numeric and categorical variable.**
 ```{r Cleaning}
 train <- train %>% 
   select(price, SqFeet, Age, BldgType) %>% 
@@ -96,7 +96,7 @@ test <- test %>%
 ```
 
 
-Running the KNN Model
+**Running the KNN Model**
 ```{r}
 # Choose a base case for 5 nearest neighbor
 k = 5
@@ -112,12 +112,113 @@ knn_model <- knn.reg(
   # Define k, Default is 3 
   k = k
 )
-
-
+print(knn_model)
 ```
 
 
+**Report Mean Squared Error**
+```{r}
+mean((train$price - knn_model$pred)^2)
+```
 
+**Use Cross Validation to find the best `k`**
+
+```{r}
+# Control Randomness
+set.seed(666)
+
+# Pre-defined variables
+# Set the range of K
+K <- 3:50
+
+# Set the number of fold for Cross Validation
+n.folds <- 10
+fold <- sample(rep(1:n.folds, length = nrow(train)))
+
+# Create a empty list to store output
+output <- list()
+
+# Iterate over folds
+for (k in K) {
+  
+  # Create an empty output list
+  each_k <- list()
+  
+  for (i in 1:n.folds) {
+    # Assign Train and Valid
+    train_cv <- train[which(fold != i),]
+    valid <- train[which(fold == i),]
+    
+    # Fit KNN models
+    model <- knn.reg(train = train_cv %>% select(-price), 
+                     test = valid %>% select(-price), 
+                     y = train_cv$price, 
+                     k = k)
+    
+    # Calculate the effective degrees of freedom
+    edf <- nrow(train_cv) / k
+    
+    # Calculate the MSE for validation data
+    valid.mse <- mean((valid$price - model$pred)^2)
+    
+    # Create a data frame to store the results
+    each_k[[i]] <- data.frame(valid.mse = valid.mse, edf = edf, k = k, fold = i)
+  }
+  
+  # Store results to the larger list
+  output[[k]] <- bind_rows(each_k)
+}
+
+# Convert list to data frame
+output <- bind_rows(output)
+
+# Report the Optimal k and Corresponding estimated MSE
+best <- output %>%
+  group_by(k) %>%
+  summarise(valid.mse = mean(valid.mse)) %>%
+  filter(valid.mse == min(valid.mse))
+print(best)
+```
+
+**Review the distribution of validation MSE by K**
+
+```{r}
+# Create a plot of estimated MSE against k
+output %>%
+  group_by(k) %>%
+  summarise(
+    count = n(),
+    valid.mse.se = sd(valid.mse) / sqrt(count),
+    valid.mse = mean(valid.mse)
+    ) %>% 
+  ggplot(aes(x = k, y = valid.mse)) + 
+  geom_point() + 
+  geom_line() +
+  geom_point(data = . %>% filter(valid.mse == min(valid.mse)),
+             color = "red",
+             size = 3) +
+  geom_errorbar(aes(ymin = valid.mse - valid.mse.se, 
+                    ymax = valid.mse + valid.mse.se)) +
+  scale_x_continuous(breaks = seq(3, 50, 5)) + 
+  ggtitle('Validation Mean Squared Error by K')
+```
+
+**Make Prediction on test dataset**
+
+Since we have found the best `k` value using cross validation, now we will use that value to re-train the model using the entire training data and make predictions on the test data.
+
+```{r}
+# Final Model
+final_model <- knn.reg(
+  train = train %>% select(-price),
+  test = test,
+  y = train$price,
+  k = best$k
+)
+
+# Write the prediction to the test data
+test$price <- final_model$pred
+```
 
 </div>
 
