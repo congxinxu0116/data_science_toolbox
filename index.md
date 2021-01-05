@@ -2,7 +2,7 @@
 
 ### Forecasting Tools 
 
-- K-Nearest Neighbor： [R Version](https://htmlpreview.github.io/?https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/KNN.html) | [Python Version](https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/KNN.ipynb)
+- K-Nearest Neighbor：[R Version](https://htmlpreview.github.io/?https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/KNN.html), [Python Version](https://htmlpreview.github.io/?https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/KNN_PY.html)
 - Ordinary Least Squares Regression 
 - Stepwise Regression 
 - Ridge, Lasso and Elastic Net
