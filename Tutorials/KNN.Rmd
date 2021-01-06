@@ -85,7 +85,7 @@ head(test)
 - `Age`: *numeric*
 - `BldgType`: *Categorical*
 
-**The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can work with numeric and categorical variable.**
+**The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can only work with numeric variables.**
 ```{r Cleaning}
 train <- train %>% 
   select(price, SqFeet, Age, BldgType) %>% 
@@ -218,6 +218,7 @@ final_model <- knn.reg(
 
 # Write the prediction to the test data
 test$price <- final_model$pred
+summary(test$price)
 ```
 
 </div>

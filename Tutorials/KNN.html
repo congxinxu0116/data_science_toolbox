@@ -518,7 +518,7 @@ head(test)</code></pre>
 <li><code>Age</code>: <em>numeric</em></li>
 <li><code>BldgType</code>: <em>Categorical</em></li>
 </ul>
-<p><strong>The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can work with numeric and categorical variable.</strong></p>
+<p><strong>The predictors are selected based on intuition and they are somewhat random. The purpose is to show that KNN can only work with numeric variables.</strong></p>
 <pre class="r"><code>train &lt;- train %&gt;% 
   select(price, SqFeet, Age, BldgType) %&gt;% 
   mutate(BldgType = as.numeric(as.factor(BldgType)))
@@ -636,7 +636,10 @@ final_model &lt;- knn.reg(
 )
 
 # Write the prediction to the test data
-test$price &lt;- final_model$pred</code></pre>
+test$price &lt;- final_model$pred
+summary(test$price)</code></pre>
+<pre><code>#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#&gt;   84.95  130.46  166.04  185.13  223.69  447.16</code></pre>
 </div>
 </div>
 
