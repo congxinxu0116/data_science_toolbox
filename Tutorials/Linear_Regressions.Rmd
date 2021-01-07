@@ -1,0 +1,165 @@
+---
+title: "Linear Regressions"
+author: "Congxin (David) Xu"
+date: "1/5/2021"
+output: html_document
+---
+
+
+```{r Setup, include=FALSE}
+knitr::opts_chunk$set(error=TRUE,           # Keep compiling upon error
+                      collapse=FALSE,       # collapse by default
+                      echo=TRUE,            # echo code by default
+                      comment = "#>",       # change comment character
+                      fig.width = 5,        # set figure width
+                      fig.align = "center", # set figure position
+                      out.width = "49%",    # set width of displayed images
+                      warning=TRUE,         # show R warnings
+                      message=TRUE)         # show R messages
+options(dplyr.summarise.inform = FALSE)     # ignore message about group structure
+```
+
+
+```{css Solution-Region, echo=FALSE}
+.solution {
+  background-color: #232D4B10;
+  border-style: solid;
+  border-color: #232D4B;
+  padding: .5em;
+  margin: 20px
+}
+```
+
+
+## Description
+
+This tutorial is going to discuss how to implement linear regressions in `R`. We are going to cover:
+
+- Ordinary Least Squares Regression
+- Step-wise Regression
+- Lasso Regression
+- Ridge Regression
+- Elastic Net Regression
+
+## Package Dependency
+
+- [`tidyverse`](https://www.tidyverse.org/)
+  - We will mainly use `tidyverse` for data manipulation (`dplyr`) and visualization (`ggplot2`). 
+- [`stats`](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/00Index.html)
+  - `stats` package is part of the base R package, so you do not need to install it. It should already be pre-installed.
+  - This is the package that contains the `lm()` function that will perform the linear regression and the `step()` function that will perform the stepwise regression.
+- [`glmnet`](https://cran.r-project.org/web/packages/glmnet/glmnet.pdf)
+  - Title: Lasso and Elastic-Net Regularized Generalized Linear Models
+  - This is the package that contains the functions that will perform ridge, lasso, and elastic net regressions. 
+  
+  
+## Use Case
+
+- Linear Regression models assume the linear relationship between the response variable and the predictors. It can be used to solve almost all regression type of problems.
+
+## Caution
+
+- If you care more about the inference of the model or the interpretation of the model, you need to pay attention to the potential violation of the assumptions of linear regression models. 
+- If you care more about the predictive power of the model, you need to pay attention to the accuracy of the model.
+
+## Tutorial
+
+<div class="solution">
+Load the required library
+```{r Packages, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(glmnet)
+```
+</div>
+
+
+The data we will use is the housing price data from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques).
+
+- Response Variable: **`price`**
+
+<div class="solution">
+**Read and Preview the Training Data**
+```{r Training Data, message=FALSE}
+train <- read_csv('.\\Data\\realestate-train.csv')
+head(train)
+```
+
+**Read and Preview the Testing Data**
+```{r Testing Data, message=FALSE}
+test <- read_csv('.\\Data\\realestate-test.csv')
+head(test)
+```
+```{r Cleaning, include = FALSE}
+# train <- train %>% 
+#   select(price, SqFeet, Age, Baths, TotRmsAbvGrd, BldgType) %>% 
+#   mutate(BldgType = as.numeric(as.factor(BldgType)))
+# test <- test %>% 
+#   select(SqFeet, Age, Baths, TotRmsAbvGrd, BldgType) %>% 
+#   mutate(BldgType = as.numeric(as.factor(BldgType)))
+```
+
+</div>
+
+
+### Ordinary Least Squares Regression
+<div class="solution">
+**Assumptions**
+
+1. The errors, for each fixed value of $x$, have mean 0.
+2. The errors, for each fixed value of $x$, have constant variance.
+3. The errors are independent.
+4. The errors, for each fixed value of $x$, follow a normal distribution.
+
+**For this section, we will just focus on the following predictors:**
+
+- `SqFeet`: *numeric*
+- `Age`: *numeric*
+- `Baths`: *numeric*
+- `TotRmsAbvGrd`: *numeric*
+- `BldgType`: *categorical*
+
+**Set Up the Model**
+
+```{r}
+linear_model <- lm(data = train, price ~ SqFeet + Age + Baths + TotRmsAbvGrd + BldgType)
+summary(linear_model)
+```
+**Report Mean Squared Error on Training Data**
+
+```{r}
+mean((linear_model$residuals)^2)
+```
+
+</div>
+
+### Stepwise Regression Model
+<div class="solution">
+- For the stepwise regression model, we are going to try to include all predictors in the training data and see what parameters will be picked out based on the AIC.
+
+```{r}
+stepwise_model <- step(lm(data = train, price ~ .),
+                     direction="both")
+```
+
+*Report the final parameters of stepwise model*
+```{r}
+summary(stepwise_model)
+```
+**Report Mean Squared Error on Training Data**
+
+```{r}
+mean((stepwise_model$residuals)^2)
+```
+</div>
+
+
+### Lasso Regression 
+
+<div class="solution">
+
+
+```{r}
+lasso_model <- glmnet()
+```
+
+</div>
