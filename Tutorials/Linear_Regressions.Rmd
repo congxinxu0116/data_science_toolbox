@@ -37,21 +37,24 @@ This tutorial is going to discuss how to implement linear regressions in `R`. We
 
 - Ordinary Least Squares Regression
 - Step-wise Regression
-- Lasso Regression
-- Ridge Regression
-- Elastic Net Regression
+- Penalized Linear Regression
+  - Lasso Regression
+  - Ridge Regression
+  - Elastic Net Regression
 
 ## Package Dependency
 
 - [`tidyverse`](https://www.tidyverse.org/)
   - We will mainly use `tidyverse` for data manipulation (`dplyr`) and visualization (`ggplot2`). 
+- [`broom`](https://cran.r-project.org/web/packages/broom/broom.pdf)
+  - We will mainly use the 'tidy()' function from broom to print out the cleaned summary of the model information.
 - [`stats`](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/00Index.html)
   - `stats` package is part of the base R package, so you do not need to install it. It should already be pre-installed.
   - This is the package that contains the `lm()` function that will perform the linear regression and the `step()` function that will perform the stepwise regression.
 - [`glmnet`](https://cran.r-project.org/web/packages/glmnet/glmnet.pdf)
   - Title: Lasso and Elastic-Net Regularized Generalized Linear Models
   - This is the package that contains the functions that will perform ridge, lasso, and elastic net regressions. 
-  
+
   
 ## Use Case
 
@@ -68,6 +71,7 @@ This tutorial is going to discuss how to implement linear regressions in `R`. We
 Load the required library
 ```{r Packages, warning=FALSE, message=FALSE}
 library(tidyverse)
+library(broom)
 library(glmnet)
 ```
 </div>
@@ -152,14 +156,151 @@ mean((stepwise_model$residuals)^2)
 ```
 </div>
 
+### Penalized Linear Regression
 
-### Lasso Regression 
+- $\lambda$ is the penalty on including additional variables to the model.
+- We will first use `cv.glmnet()` function to determine the best penalty for this model using cross validation.
+
+#### Lasso Regression 
+
+- **Lasso tends to shrink the coefficient of the predictors all the way to 0**.
+- For the Lasso Regression, we need to set **`alpha = 1`**.
 
 <div class="solution">
 
 
 ```{r}
-lasso_model <- glmnet()
+# Control Randomness
+set.seed(666)
+
+# Initiate the Cross Validation 
+lasso_cv_model <- cv.glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+                            y = train %>% select(price) %>% as.matrix(),
+                            alpha = 1, # Lasso
+                            nfolds = 10, # 10 fold cross validation
+                            family = 'gaussian') # use "gaussian" or "poisson" for regression problems
+
+# Visualize the Lasso Model with Cross Validation
+plot(lasso_cv_model)
+
+# Report the Cross Validation MSE at lambda.1se
+print(lasso_cv_model$cvm[which(lasso_cv_model$lambda == lasso_cv_model$lambda.1se)])
 ```
+- Then, we will use the $\lambda$ at 1 standard deviation (the 2nd dotted line above) as an input to the final `glmnet()` model.
+
+```{r}
+# Training the final lasso model for prediction
+lasso_model <- glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+                      y = train %>% select(price) %>% as.matrix(),
+                      alpha = 1,
+                      lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
+                      family = 'gaussian')
+
+# Display the coefficients
+print(lasso_model$beta)
+```
+
+Based on the output above, we can see that `PoolArea`, `TotRmsAbvGrd` and `Baths` are removed as unhelpful predictors.
+</div>
+
+#### Ridge Regression 
+
+- **Ridge tends to keep all the predictors.**.
+- For the Ridge Regression, we need to set **`alpha = 0`**.
+
+<div class="solution">
+```{r}
+# Control Randomness
+set.seed(666)
+
+# Initiate the Cross Validation 
+ridge_cv_model <- cv.glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+                            y = train %>% select(price) %>% as.matrix(),
+                            alpha = 0, # Ridge
+                            nfolds = 10, # 10 fold cross validation
+                            family = 'gaussian') # use "gaussian" or "poisson" for regression problems
+
+# Visualize the Lasso Model with Cross Validation
+plot(ridge_cv_model)
+
+# Report the Cross Validation MSE at lambda.1se
+print(ridge_cv_model$cvm[which(ridge_cv_model$lambda == ridge_cv_model$lambda.1se)])
+```
+
+```{r}
+# Training the final lasso model for prediction
+ridge_model <- glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+                      y = train %>% select(price) %>% as.matrix(),
+                      alpha = 0,
+                      lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
+                      family = 'gaussian')
+
+# Display the coefficients
+print(ridge_model$beta)
+```
+Based on the output above, we can see that all predictors have non-zero coefficients in this Ridge model.
+
+</div>
+
+
+#### Elastic Net Regression 
+
+- For Elastic Net, we have 2 tuning parameters `alpha` and `lambda`. 
+- We need to find the best `alpha` value using a for loop with cross validation. 
+- Then, we need to find the best lambda based on the best alpha value. 
+
+<div class="solution">
+```{r}
+# Control Randomness
+set.seed(666) 
+
+# Pre-defined setting
+alpha <- seq(0, 1, 0.01)
+
+# Create a empty list to store results
+output <- list()
+
+# Finding the best alpha
+for (a in 1:length(alpha)) {
+
+    # Build model using CV 
+  model <- cv.glmnet(x = train %>% select(-price, -CentralAir, -BldgType, -HouseStyle) %>% as.matrix(),
+                     y = train %>% select(price) %>% as.matrix(), 
+                     nfolds = 10, 
+                     alpha = alpha[a],
+                     family = 'gaussian')
+    
+    # Store the data into output
+    output[[a]] <- data.frame(alpha = alpha[a], 
+                              lambda = model$lambda.1se,
+                              # cvm is an output stored within the model object
+                              # it is the cross validation mean squared error
+                              mse = model$cvm[which(model$lambda == model$lambda.1se)])
+  
+}
+
+# Convert list back to data frame
+output <- bind_rows(output)
+
+# Report alpha and lambda for final prediction
+output %>% 
+  filter(mse == min(mse))
+```
+
+```{r}
+# Collect the best output
+best <- output %>% filter(mse == min(mse))
+
+# Training the final lasso model for prediction
+elastic_net_model <- glmnet(x = train %>% select(-price, -CentralAir, -BldgType, -HouseStyle) %>% as.matrix(),
+                            y = train %>% select(price) %>% as.matrix(),
+                            alpha = best$alpha,
+                            lambda = best$lambda, # obtained from the table above
+                            family = 'gaussian')
+
+# Display the coefficients
+print(elastic_net_model$beta)
+```
+Based on the output above, we can see that `PoolArea`, `TotRmsAbvGrd` and `Baths` are removed as unhelpful predictors.
 
 </div>
