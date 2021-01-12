@@ -727,7 +727,9 @@ summary(linear_model)</code></pre>
 set.seed(666)
 
 # Initiate the Cross Validation 
-lasso_cv_model &lt;- cv.glmnet(x = train %&gt;% select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% as.matrix(),
+lasso_cv_model &lt;- cv.glmnet(x = train %&gt;% 
+                              select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% 
+                              as.matrix(),
                             y = train %&gt;% select(price) %&gt;% as.matrix(),
                             alpha = 1, # Lasso
                             nfolds = 10, # 10 fold cross validation
@@ -743,7 +745,9 @@ print(lasso_cv_model$cvm[which(lasso_cv_model$lambda == lasso_cv_model$lambda.1s
 <li>Then, we will use the <span class="math inline">\(\lambda\)</span> at 1 standard deviation (the 2nd dotted line above) as an input to the final <code>glmnet()</code> model.</li>
 </ul>
 <pre class="r"><code># Training the final lasso model for prediction
-lasso_model &lt;- glmnet(x = train %&gt;% select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% as.matrix(),
+lasso_model &lt;- glmnet(x = train %&gt;% 
+                        select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% 
+                        as.matrix(),
                       y = train %&gt;% select(price) %&gt;% as.matrix(),
                       alpha = 1,
                       lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
@@ -776,7 +780,9 @@ print(lasso_model$beta)</code></pre>
 set.seed(666)
 
 # Initiate the Cross Validation 
-ridge_cv_model &lt;- cv.glmnet(x = train %&gt;% select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% as.matrix(),
+ridge_cv_model &lt;- cv.glmnet(x = train %&gt;% 
+                              select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% 
+                              as.matrix(),
                             y = train %&gt;% select(price) %&gt;% as.matrix(),
                             alpha = 0, # Ridge
                             nfolds = 10, # 10 fold cross validation
@@ -789,7 +795,9 @@ plot(ridge_cv_model)</code></pre>
 print(ridge_cv_model$cvm[which(ridge_cv_model$lambda == ridge_cv_model$lambda.1se)])</code></pre>
 <pre><code>#&gt; [1] 1961.971</code></pre>
 <pre class="r"><code># Training the final lasso model for prediction
-ridge_model &lt;- glmnet(x = train %&gt;% select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% as.matrix(),
+ridge_model &lt;- glmnet(x = train %&gt;% 
+                        select(-price,-CentralAir,-BldgType,-HouseStyle) %&gt;% 
+                        as.matrix(),
                       y = train %&gt;% select(price) %&gt;% as.matrix(),
                       alpha = 0,
                       lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
@@ -832,7 +840,9 @@ output &lt;- list()
 for (a in 1:length(alpha)) {
 
     # Build model using CV 
-  model &lt;- cv.glmnet(x = train %&gt;% select(-price, -CentralAir, -BldgType, -HouseStyle) %&gt;% as.matrix(),
+  model &lt;- cv.glmnet(x = train %&gt;% 
+                       select(-price, -CentralAir, -BldgType, -HouseStyle) %&gt;% 
+                       as.matrix(),
                      y = train %&gt;% select(price) %&gt;% as.matrix(), 
                      nfolds = 10, 
                      alpha = alpha[a],
@@ -859,7 +869,9 @@ output %&gt;%
 best &lt;- output %&gt;% filter(mse == min(mse))
 
 # Training the final lasso model for prediction
-elastic_net_model &lt;- glmnet(x = train %&gt;% select(-price, -CentralAir, -BldgType, -HouseStyle) %&gt;% as.matrix(),
+elastic_net_model &lt;- glmnet(x = train %&gt;% 
+                              select(-price, -CentralAir, -BldgType, -HouseStyle) %&gt;% 
+                              as.matrix(),
                             y = train %&gt;% select(price) %&gt;% as.matrix(),
                             alpha = best$alpha,
                             lambda = best$lambda, # obtained from the table above
@@ -880,6 +892,44 @@ print(elastic_net_model$beta)</code></pre>
 #&gt; condition     4.3101717643</code></pre>
 <p>Based on the output above, we can see that <code>PoolArea</code>, <code>TotRmsAbvGrd</code> and <code>Baths</code> are removed as unhelpful predictors.</p>
 </div>
+</div>
+</div>
+<div id="making-predictions" class="section level3">
+<h3>Making Predictions</h3>
+In this section, we are going to predict <code>price</code> on the test data using all 5 models generated above.
+<div class="solution">
+<pre class="r"><code>test &lt;- test %&gt;%
+  mutate(
+    # Predict the future using linear regression 
+    price_linear_pred = predict(linear_model, newdata = test),
+    
+    # Predict the future using stepwise regression 
+    price_step_pred = predict(stepwise_model, newdata = test),
+    
+    # Predict the future using lasso regression 
+    price_lasso_pred = predict(
+      lasso_model,
+      newx = test %&gt;%
+        select(-CentralAir,-BldgType,-HouseStyle) %&gt;%
+        as.matrix()
+    ),
+    
+    # Predict the future using ridge regression 
+    price_ridge_pred = predict(
+      ridge_model,
+      newx = test %&gt;%
+        select(-CentralAir,-BldgType,-HouseStyle) %&gt;%
+        as.matrix()
+    ),
+    
+    # Predict the future using elastic net regression 
+    price_enet_pred = predict(
+      elastic_net_model,
+      newx = test %&gt;%
+        select(-CentralAir,-BldgType,-HouseStyle) %&gt;%
+        as.matrix()
+    )
+  )</code></pre>
 </div>
 </div>
 </div>

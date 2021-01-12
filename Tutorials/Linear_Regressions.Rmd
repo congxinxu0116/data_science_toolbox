@@ -174,7 +174,9 @@ mean((stepwise_model$residuals)^2)
 set.seed(666)
 
 # Initiate the Cross Validation 
-lasso_cv_model <- cv.glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+lasso_cv_model <- cv.glmnet(x = train %>% 
+                              select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                              as.matrix(),
                             y = train %>% select(price) %>% as.matrix(),
                             alpha = 1, # Lasso
                             nfolds = 10, # 10 fold cross validation
@@ -190,7 +192,9 @@ print(lasso_cv_model$cvm[which(lasso_cv_model$lambda == lasso_cv_model$lambda.1s
 
 ```{r}
 # Training the final lasso model for prediction
-lasso_model <- glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+lasso_model <- glmnet(x = train %>% 
+                        select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                        as.matrix(),
                       y = train %>% select(price) %>% as.matrix(),
                       alpha = 1,
                       lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
@@ -214,7 +218,9 @@ Based on the output above, we can see that `PoolArea`, `TotRmsAbvGrd` and `Baths
 set.seed(666)
 
 # Initiate the Cross Validation 
-ridge_cv_model <- cv.glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+ridge_cv_model <- cv.glmnet(x = train %>% 
+                              select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                              as.matrix(),
                             y = train %>% select(price) %>% as.matrix(),
                             alpha = 0, # Ridge
                             nfolds = 10, # 10 fold cross validation
@@ -229,7 +235,9 @@ print(ridge_cv_model$cvm[which(ridge_cv_model$lambda == ridge_cv_model$lambda.1s
 
 ```{r}
 # Training the final lasso model for prediction
-ridge_model <- glmnet(x = train %>% select(-price,-CentralAir,-BldgType,-HouseStyle) %>% as.matrix(),
+ridge_model <- glmnet(x = train %>% 
+                        select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                        as.matrix(),
                       y = train %>% select(price) %>% as.matrix(),
                       alpha = 0,
                       lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
@@ -264,7 +272,9 @@ output <- list()
 for (a in 1:length(alpha)) {
 
     # Build model using CV 
-  model <- cv.glmnet(x = train %>% select(-price, -CentralAir, -BldgType, -HouseStyle) %>% as.matrix(),
+  model <- cv.glmnet(x = train %>% 
+                       select(-price, -CentralAir, -BldgType, -HouseStyle) %>% 
+                       as.matrix(),
                      y = train %>% select(price) %>% as.matrix(), 
                      nfolds = 10, 
                      alpha = alpha[a],
@@ -292,7 +302,9 @@ output %>%
 best <- output %>% filter(mse == min(mse))
 
 # Training the final lasso model for prediction
-elastic_net_model <- glmnet(x = train %>% select(-price, -CentralAir, -BldgType, -HouseStyle) %>% as.matrix(),
+elastic_net_model <- glmnet(x = train %>% 
+                              select(-price, -CentralAir, -BldgType, -HouseStyle) %>% 
+                              as.matrix(),
                             y = train %>% select(price) %>% as.matrix(),
                             alpha = best$alpha,
                             lambda = best$lambda, # obtained from the table above
@@ -303,4 +315,44 @@ print(elastic_net_model$beta)
 ```
 Based on the output above, we can see that `PoolArea`, `TotRmsAbvGrd` and `Baths` are removed as unhelpful predictors.
 
+</div>
+
+### Making Predictions
+
+In this section, we are going to predict `price` on the test data using all 5 models generated above.
+<div class="solution">
+```{r}
+test <- test %>%
+  mutate(
+    # Predict the future using linear regression 
+    price_linear_pred = predict(linear_model, newdata = test),
+    
+    # Predict the future using stepwise regression 
+    price_step_pred = predict(stepwise_model, newdata = test),
+    
+    # Predict the future using lasso regression 
+    price_lasso_pred = predict(
+      lasso_model,
+      newx = test %>%
+        select(-CentralAir,-BldgType,-HouseStyle) %>%
+        as.matrix()
+    ),
+    
+    # Predict the future using ridge regression 
+    price_ridge_pred = predict(
+      ridge_model,
+      newx = test %>%
+        select(-CentralAir,-BldgType,-HouseStyle) %>%
+        as.matrix()
+    ),
+    
+    # Predict the future using elastic net regression 
+    price_enet_pred = predict(
+      elastic_net_model,
+      newx = test %>%
+        select(-CentralAir,-BldgType,-HouseStyle) %>%
+        as.matrix()
+    )
+  )
+```
 </div>
