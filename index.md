@@ -3,9 +3,10 @@
 ### Forecasting Tools 
 
 - K-Nearest Neighbor：[R Version](https://htmlpreview.github.io/?https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/KNN.html), [Python Version](https://htmlpreview.github.io/?https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/KNN_PY.html)
-- Ordinary Least Squares Regression 
-- Stepwise Regression 
-- Ridge, Lasso and Elastic Net
+- Linear Models: [R Version](https://htmlpreview.github.io/?https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/Linear_Regressions.html), [Python Version](https://github.com/congxinxu0116/data_science_toolbox.io/blob/main/Tutorials/Linear_Regressions_PY.html)
+  - Ordinary Least Squares Regression 
+  - Stepwise Regression 
+  - Ridge, Lasso and Elastic Net
 - Generalized Additive Model 
   - Basis Expansion 
 - Generative Classification Models 
