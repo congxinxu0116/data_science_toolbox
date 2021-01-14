@@ -28,8 +28,6 @@ This GitHub repo is a collection of data science tutorials on how to solve diffe
 - Ordinary Least Squares Regression 
 - Stepwise Regression 
 - Ridge, Lasso and Elastic Net
-- Generalized Additive Model 
-  - Basis Expansion 
 - Generative Classification Models 
   - Linear Discriminant Analysis  
   - Quadratic Discriminant Analysis 
