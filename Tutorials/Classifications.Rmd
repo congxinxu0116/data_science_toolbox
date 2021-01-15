@@ -131,17 +131,27 @@ gc()
 - `pH`: *numeric*
 
 **Set Up the Model**
+- One thing to note here is that we have to set `family = 'binomial'` within the  `glm()` function.
 
 ```{r}
 logit_model <- glm(data = train, 
                    type ~ fixed.acidity + residual.sugar + chlorides + free.sulfur.dioxide + pH,
                    family="binomial")
 summary(logit_model)
+
 ```
-**Report Mean Squared Error on Training Data**
+**Making Predictions**
 
 ```{r}
-mean((linear_model$residuals)^2)
+test <- test %>% 
+  mutate(pred = predict(logit_model, newdata = test, type = 'response')) %>% 
+  mutate(pred = ifelse(pred > 0.5, 1, 0))  # Using 0.5 as default threshold 
+summary(test$pred)
+```
+
+**Creating a Confusion Matrix**
+```{r}
+table(predicted=test$pred, truth = test$type)
 ```
 
 </div>
