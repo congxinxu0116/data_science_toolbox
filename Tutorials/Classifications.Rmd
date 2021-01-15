@@ -1,0 +1,368 @@
+---
+title: "Classifications"
+author: "Congxin (David) Xu"
+date: "1/13/2021"
+output: html_document
+---
+
+
+```{r Setup, include=FALSE}
+knitr::opts_chunk$set(error=TRUE,           # Keep compiling upon error
+                      collapse=FALSE,       # collapse by default
+                      echo=TRUE,            # echo code by default
+                      comment = "#>",       # change comment character
+                      fig.width = 5,        # set figure width
+                      fig.align = "center", # set figure position
+                      out.width = "49%",    # set width of displayed images
+                      warning=TRUE,         # show R warnings
+                      message=TRUE)         # show R messages
+options(dplyr.summarise.inform = FALSE)     # ignore message about group structure
+```
+
+
+```{css Solution-Region, echo=FALSE}
+.solution {
+  background-color: #232D4B10;
+  border-style: solid;
+  border-color: #232D4B;
+  padding: .5em;
+  margin: 20px
+}
+```
+
+
+## Description
+
+This tutorial is going to discuss how to implement classification algorithms in `R`. We are going to cover:
+
+- Logistic Regression
+- Elastic Net (Lasso, Ridge)
+- Linear Discriminant Analysis
+- Quadratic Discriminant Analysis
+- Naive Bayes
+
+Please note that `KNN`, `Linear Regression`, `Random Forest` and `XGBoost` as well as other algorithms can also be used to solve classification type of problems.
+
+
+## Package Dependency
+
+- [`tidyverse`](https://www.tidyverse.org/)
+  - We will mainly use `tidyverse` for data manipulation (`dplyr`) and visualization (`ggplot2`). 
+- [`MASS`](https://cran.r-project.org/web/packages/MASS/MASS.pdf)
+  - We will mainly use the `lda()` and `qda()` function to perform the two discriminant analysis
+- [`stats`](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/00Index.html)
+  - `stats` package is part of the base R package, so you do not need to install it. It should already be pre-installed.
+  - This is the package that contains the `glm()` function that will perform the logistic regression.
+- [`glmnet`](https://cran.r-project.org/web/packages/glmnet/glmnet.pdf)
+  - Title: Lasso and Elastic-Net Regularized Generalized Linear Models
+  - This is the package that contains the functions that will perform ridge, lasso, and elastic net regressions. 
+
+  
+## Use Case
+
+- Logistic regression models assume the linear relationship between the binary response variable and the predictors. 
+
+## Caution
+
+- We need to think about the **cost** of false positive rate and false negative rate when setting a hard threshold. 
+
+## Tutorial
+
+<div class="solution">
+Load the required library. One thing to note is that we should load the `MASS` package before the `tidyverse` package. The reason is that both package have a function called `select()`, but the function `select()` in the `MASS` package is very different from the `select()` function in `tidyverse` that we would like to use. Loading the `tidyverse` package after the `MASS` package will also the functions with the same name in `tidyverse` overwrite those functions in the `MASS` package. If you want to use a function in a specific package, you can always use the `::`, e.g. `MASS::select()`
+
+```{r Packages, warning=FALSE, message=FALSE}
+library(MASS)
+library(tidyverse)
+library(glmnet)
+```
+</div>
+
+
+The data we will use is the wine data from [UCI Machine Learning Library](https://archive.ics.uci.edu/ml/datasets/wine).
+
+- Response Variable: **`type`**
+  - 0: Red Wine
+  - 1: White Wine
+
+<div class="solution">
+**Read in all the data**
+```{r Training Data, message=FALSE, warning=FALSE}
+full <- read_csv('.\\Data\\wineQualityReds.csv') %>%
+  mutate(type = 0) %>%
+  select(-X1) %>%
+  bind_rows(
+    read_csv('.\\Data\\wineQualityWhites.csv') %>%
+      mutate(type = 1) %>%
+      select(-X1)
+  ) %>% 
+  mutate(type = as.factor(type))
+table(full$type)
+```
+
+**Split Train and Test Data**
+```{r Testing Data, message=FALSE}
+set.seed(666)
+train_row <- sample(nrow(full), 0.8*nrow(full))
+train <- full[train_row,]
+test <- full[-train_row,]
+head(train)
+```
+
+```{r, include=FALSE}
+# Remove unnecessary objects
+rm(full, train_row)
+gc()
+```
+
+</div>
+
+
+### Logistic Regression
+<div class="solution">
+**Assumptions**
+
+**For this section, we will just focus on the following predictors:**
+
+- `fixed.acidity`: *numeric*
+- `residual.sugar`: *numeric*
+- `chlorides`: *numeric*
+- `free.sulfur.dioxide`: *numeric*
+- `pH`: *numeric*
+
+**Set Up the Model**
+
+```{r}
+logit_model <- glm(data = train, 
+                   type ~ fixed.acidity + residual.sugar + chlorides + free.sulfur.dioxide + pH,
+                   family="binomial")
+summary(logit_model)
+```
+**Report Mean Squared Error on Training Data**
+
+```{r}
+mean((linear_model$residuals)^2)
+```
+
+</div>
+
+### Stepwise Regression Model
+<div class="solution">
+- For the stepwise regression model, we are going to try to include all predictors in the training data and see what parameters will be picked out based on the AIC.
+
+```{r}
+stepwise_model <- step(lm(data = train, price ~ .),
+                     direction="both")
+```
+
+*Report the final parameters of stepwise model*
+```{r}
+summary(stepwise_model)
+```
+**Report Mean Squared Error on Training Data**
+
+```{r}
+mean((stepwise_model$residuals)^2)
+```
+</div>
+
+### Penalized Linear Regression
+
+- $\lambda$ is the penalty on including additional variables to the model.
+- We will first use `cv.glmnet()` function to determine the best penalty for this model using cross validation.
+
+#### Lasso Regression 
+
+- **Lasso tends to shrink the coefficient of the predictors all the way to 0**.
+- For the Lasso Regression, we need to set **`alpha = 1`**.
+
+<div class="solution">
+
+
+```{r}
+# Control Randomness
+set.seed(666)
+
+# Initiate the Cross Validation 
+lasso_cv_model <- cv.glmnet(x = train %>% 
+                              select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                              as.matrix(),
+                            y = train %>% select(price) %>% as.matrix(),
+                            alpha = 1, # Lasso
+                            nfolds = 10, # 10 fold cross validation
+                            family = 'gaussian') # use "gaussian" or "poisson" for regression problems
+
+# Visualize the Lasso Model with Cross Validation
+plot(lasso_cv_model)
+
+# Report the Cross Validation MSE at lambda.1se
+print(lasso_cv_model$cvm[which(lasso_cv_model$lambda == lasso_cv_model$lambda.1se)])
+```
+- Then, we will use the $\lambda$ at 1 standard deviation (the 2nd dotted line above) as an input to the final `glmnet()` model.
+
+```{r}
+# Training the final lasso model for prediction
+lasso_model <- glmnet(x = train %>% 
+                        select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                        as.matrix(),
+                      y = train %>% select(price) %>% as.matrix(),
+                      alpha = 1,
+                      lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
+                      family = 'gaussian')
+
+# Display the coefficients
+print(lasso_model$beta)
+```
+
+Based on the output above, we can see that `PoolArea`, `TotRmsAbvGrd` and `Baths` are removed as unhelpful predictors.
+</div>
+
+#### Ridge Regression 
+
+- **Ridge tends to keep all the predictors.**.
+- For the Ridge Regression, we need to set **`alpha = 0`**.
+
+<div class="solution">
+```{r}
+# Control Randomness
+set.seed(666)
+
+# Initiate the Cross Validation 
+ridge_cv_model <- cv.glmnet(x = train %>% 
+                              select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                              as.matrix(),
+                            y = train %>% select(price) %>% as.matrix(),
+                            alpha = 0, # Ridge
+                            nfolds = 10, # 10 fold cross validation
+                            family = 'gaussian') # use "gaussian" or "poisson" for regression problems
+
+# Visualize the Lasso Model with Cross Validation
+plot(ridge_cv_model)
+
+# Report the Cross Validation MSE at lambda.1se
+print(ridge_cv_model$cvm[which(ridge_cv_model$lambda == ridge_cv_model$lambda.1se)])
+```
+
+```{r}
+# Training the final lasso model for prediction
+ridge_model <- glmnet(x = train %>% 
+                        select(-price,-CentralAir,-BldgType,-HouseStyle) %>% 
+                        as.matrix(),
+                      y = train %>% select(price) %>% as.matrix(),
+                      alpha = 0,
+                      lambda = lasso_cv_model$lambda.1se, # lambda.1se is obtained from previous step
+                      family = 'gaussian')
+
+# Display the coefficients
+print(ridge_model$beta)
+```
+Based on the output above, we can see that all predictors have non-zero coefficients in this Ridge model.
+
+</div>
+
+
+#### Elastic Net Regression 
+
+- For Elastic Net, we have 2 tuning parameters `alpha` and `lambda`. 
+- We need to find the best `alpha` value using a for loop with cross validation. 
+- Then, we need to find the best lambda based on the best alpha value. 
+
+<div class="solution">
+```{r}
+# Control Randomness
+set.seed(666) 
+
+# Pre-defined setting
+alpha <- seq(0, 1, 0.01)
+
+# Create a empty list to store results
+output <- list()
+
+# Finding the best alpha
+for (a in 1:length(alpha)) {
+
+    # Build model using CV 
+  model <- cv.glmnet(x = train %>% 
+                       select(-price, -CentralAir, -BldgType, -HouseStyle) %>% 
+                       as.matrix(),
+                     y = train %>% select(price) %>% as.matrix(), 
+                     nfolds = 10, 
+                     alpha = alpha[a],
+                     family = 'gaussian')
+    
+    # Store the data into output
+    output[[a]] <- data.frame(alpha = alpha[a], 
+                              lambda = model$lambda.1se,
+                              # cvm is an output stored within the model object
+                              # it is the cross validation mean squared error
+                              mse = model$cvm[which(model$lambda == model$lambda.1se)])
+  
+}
+
+# Convert list back to data frame
+output <- bind_rows(output)
+
+# Report alpha and lambda for final prediction
+output %>% 
+  filter(mse == min(mse))
+```
+
+```{r}
+# Collect the best output
+best <- output %>% filter(mse == min(mse))
+
+# Training the final lasso model for prediction
+elastic_net_model <- glmnet(x = train %>% 
+                              select(-price, -CentralAir, -BldgType, -HouseStyle) %>% 
+                              as.matrix(),
+                            y = train %>% select(price) %>% as.matrix(),
+                            alpha = best$alpha,
+                            lambda = best$lambda, # obtained from the table above
+                            family = 'gaussian')
+
+# Display the coefficients
+print(elastic_net_model$beta)
+```
+Based on the output above, we can see that `PoolArea`, `TotRmsAbvGrd` and `Baths` are removed as unhelpful predictors.
+
+</div>
+
+### Making Predictions
+
+In this section, we are going to predict `price` on the test data using all 5 models generated above.
+<div class="solution">
+```{r}
+test <- test %>%
+  mutate(
+    # Predict the future using linear regression 
+    price_linear_pred = predict(linear_model, newdata = test),
+    
+    # Predict the future using stepwise regression 
+    price_step_pred = predict(stepwise_model, newdata = test),
+    
+    # Predict the future using lasso regression 
+    price_lasso_pred = predict(
+      lasso_model,
+      newx = test %>%
+        select(-CentralAir,-BldgType,-HouseStyle) %>%
+        as.matrix()
+    ),
+    
+    # Predict the future using ridge regression 
+    price_ridge_pred = predict(
+      ridge_model,
+      newx = test %>%
+        select(-CentralAir,-BldgType,-HouseStyle) %>%
+        as.matrix()
+    ),
+    
+    # Predict the future using elastic net regression 
+    price_enet_pred = predict(
+      elastic_net_model,
+      newx = test %>%
+        select(-CentralAir,-BldgType,-HouseStyle) %>%
+        as.matrix()
+    )
+  )
+```
+</div>
